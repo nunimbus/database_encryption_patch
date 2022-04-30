@@ -450,8 +450,8 @@ class Application extends App implements IBootstrap {
 				switch ($query->getType()) {
 					case \Doctrine\DBAL\Query\QueryBuilder::UPDATE:
 					case \Doctrine\DBAL\Query\QueryBuilder::INSERT:
-						file_put_contents(\OC::$server->getLogger()->getLogPath() . '.sql', "$sqlOrig\n", FILE_APPEND);
-						file_put_contents(\OC::$server->getLogger()->getLogPath() . '.sql', "$sql\n", FILE_APPEND);
+//						file_put_contents(\OC::$server->getLogger()->getLogPath() . '.sql', "$sqlOrig\n", FILE_APPEND);
+//						file_put_contents(\OC::$server->getLogger()->getLogPath() . '.sql', "$sql\n", FILE_APPEND);
 //						file_put_contents(\OC::$server->getLogger()->getLogPath() . '.sql', "'" . implode("'\n'", $params) . "'\n\n", FILE_APPEND);
 
 						$stmt = $query->getConnection()->prepare($sql);
