@@ -86,7 +86,7 @@ class QueryBuilderListener implements IEventListener {
 			'`*PREFIX*cards_properties`' => ['`value`'],			
 		];
 
-		$encryptedColumns = [
+/*		$encryptedColumns = [
 			'`*PREFIX*calendarobjects`' => ['`calendardata`'],
 			'`*PREFIX*calendarobjects_props`' => ['`value`'],
 			'`*PREFIX*cards`' => ['`carddata`'],
@@ -96,7 +96,7 @@ class QueryBuilderListener implements IEventListener {
 			'`*PREFIX*filecache`' => ['`path`', '`name`', '`fileid`', '`parent`', '`permissions`'],
 			'`*PREFIX*storages`' => ['`id`'],			
 		];
-
+*/
 
 		if ($query->getType() == \Doctrine\DBAL\Query\QueryBuilder::UPDATE) {
 			$i = 1;
