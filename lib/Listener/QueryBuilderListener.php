@@ -86,18 +86,6 @@ class QueryBuilderListener implements IEventListener {
 			'`*PREFIX*cards_properties`' => ['`value`'],			
 		];
 
-/*		$encryptedColumns = [
-			'`*PREFIX*calendarobjects`' => ['`calendardata`'],
-			'`*PREFIX*calendarobjects_props`' => ['`value`'],
-			'`*PREFIX*cards`' => ['`carddata`'],
-			'`*PREFIX*cards_properties`' => ['`value`', '`cardid`'],			
-			'`*PREFIX*appconfig`' => ['`configvalue`'],
-			'`*PREFIX*authtoken`' => ['`login_name`'],
-			'`*PREFIX*filecache`' => ['`path`', '`name`', '`fileid`', '`parent`', '`permissions`'],
-			'`*PREFIX*storages`' => ['`id`'],			
-		];
-*/
-
 		if ($query->getType() == \Doctrine\DBAL\Query\QueryBuilder::UPDATE) {
 			$i = 1;
 		}
@@ -164,7 +152,7 @@ class QueryBuilderListener implements IEventListener {
 		// Fields in this query probably need to be encrypted
 		if (sizeof($encryptedQueryColumns) > 0) {
 			$sqlOrig = $sql; // for logging
-/***
+/***/
 			// Handle SET
 			if ($setValues) {
 				$params = $query->getParameters();
@@ -185,7 +173,10 @@ class QueryBuilderListener implements IEventListener {
 
 				foreach ($setValues as $key=>$setValue) {
 					$setValue = trim($setValue, ':');
-					$key = trim($key, '`');
+					//$key = trim($key, '`');
+
+					$paramValue = $params[$setValue];;
+					$paramType = isset($paramTypes[$setValue]) || array_key_exists($setValue, $paramTypes) ? $paramTypes[$setValue] : 2;
 					$query->set($key, $query->createNamedParameter($params[$setValue]));
 					unset($params[$setValue]);
 					unset($paramTypes[$setValue]);
@@ -207,13 +198,14 @@ class QueryBuilderListener implements IEventListener {
 				foreach ($setValuesOrig as $key=>$setValue) {
 					if (in_array($key, $encryptedQueryColumns, true)) {
 						$newColumnName = substr($key, 0, -1) . '_encrypted`';
-						$sql = preg_replace("/$newColumnName = $setValues[$newColumnName]/", "$newColumnName = AES_ENCRYPT($setValues[$newColumnName], $password)", $sql);
+						//$newColumnName = trim($newColumnName, '`');
+						$sql = preg_replace("/$newColumnName = $setValues[$newColumnName]/", "$newColumnName = AES_ENCRYPT($setValues[$newColumnName], '$this->password')", $sql);
 						$i = 1;
 					}
 				}
 			}
 /***/
-/***
+/***/
 			// Handle VALUES
 			if ($valuesValues) {
 				$params = $query->getParameters();
@@ -234,8 +226,11 @@ class QueryBuilderListener implements IEventListener {
 
 				foreach ($valuesValues as $key=>$valuesValue) {
 					$valuesValue = trim($valuesValue, ':');
-					$key = trim($key, '`');
-					$query->setValue($key, $query->createNamedParameter($params[$valuesValue], $paramTypes[$valuesValue]));
+					//$key = trim($key, '`');
+
+					$paramValue = $params[$valuesValue];
+					$paramType = isset($paramTypes[$valuesValue]) || array_key_exists($valuesValue, $paramTypes) ? $paramTypes[$valuesValue] : 2;
+					$query->setValue($key, $query->createNamedParameter($paramValue, $paramType));
 					unset($params[$valuesValue]);
 					unset($paramTypes[$valuesValue]);
 				}
@@ -250,7 +245,8 @@ class QueryBuilderListener implements IEventListener {
 				foreach ($valuesValuesOrig as $key=>$valuesValue) {
 					if (in_array($key, $encryptedQueryColumns, true)) {
 						$newColumnName = substr($key, 0, -1) . '_encrypted`';
-						$sql = preg_replace("/$valuesValues[$newColumnName]/", "AES_ENCRYPT($valuesValues[$newColumnName], $password)", $sql);
+						//$newColumnName = trim($newColumnName, '`');
+						$sql = preg_replace("/$valuesValues[$newColumnName]/", "AES_ENCRYPT($valuesValues[$newColumnName], '$this->password')", $sql);
 						$i = 1;
 					}
 				}
