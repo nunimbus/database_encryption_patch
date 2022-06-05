@@ -117,18 +117,6 @@ class Application extends App implements IBootstrap {
 			'`*PREFIX*cards_properties`' => ['`value`'],			
 		];
 
-/*		$encryptedColumns = [
-			'`*PREFIX*calendarobjects`' => ['`calendardata`'],
-			'`*PREFIX*calendarobjects_props`' => ['`value`'],
-			'`*PREFIX*cards`' => ['`carddata`'],
-			'`*PREFIX*cards_properties`' => ['`value`', '`cardid`'],			
-			'`*PREFIX*appconfig`' => ['`configvalue`'],
-			'`*PREFIX*authtoken`' => ['`login_name`'],
-			'`*PREFIX*filecache`' => ['`path`', '`name`', '`fileid`', '`parent`', '`permissions`'],
-			'`*PREFIX*storages`' => ['`id`'],			
-		];
-*/
-
 		if ($query->getType() == \Doctrine\DBAL\Query\QueryBuilder::UPDATE) {
 			$i = 1;
 		}
