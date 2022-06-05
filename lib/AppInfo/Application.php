@@ -175,18 +175,17 @@ class Application extends App implements IBootstrap {
 			}
 		}
 
-		foreach ($query->getQueryPart('join') as $table) {
-			if (sizeof($table) != 1) {
-				throw new \Exception('File: ' . __FILE__ . ', Line: ' . __LINE__ . ' - Somehow, a JOIN table entity is != 1.');
-			}
-			foreach ($encryptedColumns as $encryptedTable=>$columns) {
-				if ($table[0]['joinTable'] == $encryptedTable) {
-					foreach ($columns as $column) {
-						if ($table[0]['joinAlias'] != null) {
-							array_push($encryptedQueryColumns, $table[0]['joinAlias'] . '.' . $column);
-						}
-						else {
-							array_push($encryptedQueryColumns, $column);
+		foreach ($query->getQueryPart('join') as $tables) {
+			foreach ($tables as $table) {
+				foreach ($encryptedColumns as $encryptedTable=>$columns) {
+					if ($table['joinTable'] == $encryptedTable) {
+						foreach ($columns as $column) {
+							if ($table['joinAlias'] != null) {
+								array_push($encryptedQueryColumns, $table['joinAlias'] . '.' . $column);
+							}
+							else {
+								array_push($encryptedQueryColumns, $column);
+							}
 						}
 					}
 				}
