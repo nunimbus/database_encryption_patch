@@ -9,9 +9,10 @@
 	<licence>agpl</licence>
 	<author>Andrew Summers</author>
 	<namespace>DatabaseEncryption</namespace>
-
+	<types>
+		<filesystem />
+	</types>
 	<category>tools</category>
-
 	<dependencies>
 		<nextcloud min-version="20" max-version="24" />
 	</dependencies>
