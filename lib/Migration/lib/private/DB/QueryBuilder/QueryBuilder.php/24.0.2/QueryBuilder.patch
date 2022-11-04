@@ -1,0 +1,68 @@
+--- ../../../../../../../../../../lib/private/DB/QueryBuilder/QueryBuilder.php	2022-06-20 10:01:33.000000000 -0500
++++ QueryBuilder.php	2022-10-30 11:25:25.803000000 -0500
+@@ -52,10 +52,13 @@
+ use OCP\DB\QueryBuilder\ILiteral;
+ use OCP\DB\QueryBuilder\IParameter;
+ use OCP\DB\QueryBuilder\IQueryBuilder;
+ use OCP\DB\QueryBuilder\IQueryFunction;
+ use Psr\Log\LoggerInterface;
++use Symfony\Component\EventDispatcher\EventDispatcherInterface;
++use Symfony\Component\EventDispatcher\GenericEvent;
++use OCP\EventDispatcher\IEventDispatcher;
+ 
+ class QueryBuilder implements IQueryBuilder {
+ 
+ 	/** @var ConnectionAdapter */
+ 	private $connection;
+@@ -75,10 +78,13 @@
+ 	private $automaticTablePrefix = true;
+ 
+ 	/** @var string */
+ 	protected $lastInsertedTable;
+ 
++	/** @var EventDispatcherInterface */
++	private $dispatcher;
++
+ 	/**
+ 	 * Initializes a new QueryBuilder.
+ 	 *
+ 	 * @param ConnectionAdapter $connection
+ 	 * @param SystemConfig $systemConfig
+@@ -87,10 +93,11 @@
+ 		$this->connection = $connection;
+ 		$this->systemConfig = $systemConfig;
+ 		$this->logger = $logger;
+ 		$this->queryBuilder = new \Doctrine\DBAL\Query\QueryBuilder($this->connection->getInner());
+ 		$this->helper = new QuoteHelper();
++		$this->dispatcher = \OC::$server->getEventDispatcher();
+ 	}
+ 
+ 	/**
+ 	 * Enable/disable automatic prefixing of table names with the oc_ prefix
+ 	 *
+@@ -276,11 +283,24 @@
+ 				'app' => 'core',
+ 				'exception' => $exception,
+ 			]);
+ 		}
+ 
+-		$result = $this->queryBuilder->execute();
++		$event = new GenericEvent($this);
++		$oldDispatcher = $this->dispatcher->dispatch('\OC\DB\QueryBuilder\QueryBuilder::preExecuteSql', $event);
++
++		$result = null;
++		$dispatcher = \OC_Hook::emit('QueryBuilder', 'preExecuteSql', ['queryBuilder' => &$this->queryBuilder, 'result' => &$result]);
++
++		if ($oldDispatcher->isPropagationStopped() && $event->getArguments()['result']) {
++			$result = $event->getArgument('result');
++		}
++
++		if ($result === null) {
++			$result = $this->queryBuilder->execute();
++		}
++		
+ 		if (is_int($result)) {
+ 			return $result;
+ 		}
+ 		return new ResultAdapter($result);
+ 	}
