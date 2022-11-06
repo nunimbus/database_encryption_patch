@@ -44,16 +44,36 @@ class Version1000Date20221023 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		InstallFunctions::uninstallConflicts(['circles', 'federation']);
-		InstallFunctions::install();
+		$appId = OC::$server->get('OC\AppFramework\App')->getAppIdForClass(get_class($this));
+		InstallFunctions::install($appId);
 
 		$server = OC::$server;
 		$encryptMap = $server->getConfig()->getSystemValue('dbencrypt');
+		$dependencies = array();
 		$innerSchema = $server->getDatabaseConnection()->getInner()->getSchemaManager();
 		$enable = false;
 
 		foreach ($encryptMap as $appName=>$tables) {
-			InstallFunctions::installDependencies([$appName]);
+			array_push($dependencies, $appName);
+		}
 
+		/** 
+		* This is a bit hacky. During initial installation, shipped apps (including this one) are installed in the order
+		* in which they are stored to disk (i.e. somewhat randomly). The problem is that some of these apps create
+		* database tables when they are installed. For instance, the tables for the calendar and contacts apps are not
+		* created until the dav app is installed and enabled. So, if any of those database tables are on the list to be
+		* encrypted, they may not exist, yet, and the creation of `_enc` tables below will fail. The solution is to
+		* set this app's 'enabled' property to 'no' so that the `installShippedApps` function doesn't try to launch
+		* the initial installation and migration steps again in an infinite loop, call `installShippedApps` so that all
+		* shipped apps are installed (thus making all possible databases available), and THEN continuing with the
+		* migration steps of this app. If you're lost, that's not surprising.
+		*/
+		OC::$server->getConfig()->setAppValue($appId, 'enabled', 'no');
+		OC::$server->get('OC\Installer')::installShippedApps();
+
+		InstallFunctions::installDependencies($dependencies);
+
+		foreach ($encryptMap as $appName=>$tables) {
 			foreach ($tables as $table=>$columns) {
 				if (!$schema->hasTable($table . '_enc')) {
 					$enable = true;
