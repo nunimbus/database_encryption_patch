@@ -68,8 +68,10 @@ class Version1000Date20221023 extends SimpleMigrationStep {
 		* shipped apps are installed (thus making all possible databases available), and THEN continuing with the
 		* migration steps of this app. If you're lost, that's not surprising.
 		*/
-		OC::$server->getConfig()->setAppValue($appId, 'enabled', 'no');
-		OC::$server->get('OC\Installer')::installShippedApps();
+		if (OC::$server->getConfig()->getSystemValue('installed') !== true) {
+			OC::$server->getConfig()->setAppValue($appId, 'enabled', 'no');
+			OC::$server->get('OC\Installer')::installShippedApps();
+		}
 
 		InstallFunctions::installDependencies($dependencies);
 
