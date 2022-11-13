@@ -48,7 +48,7 @@ class Version1000Date20221023 extends SimpleMigrationStep {
 		InstallFunctions::install($appId);
 
 		$server = OC::$server;
-		$encryptMap = $server->getConfig()->getSystemValue('dbencrypt');
+		$encryptMap = $server->getConfig()->getSystemValue('dbencrypt') ?: array();
 		$dependencies = array();
 		$innerSchema = $server->getDatabaseConnection()->getInner()->getSchemaManager();
 		$enable = false;

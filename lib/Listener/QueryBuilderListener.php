@@ -66,7 +66,7 @@ class QueryBuilderListener {
 		}
 
 		// Get the encryptMap from the config file and clear out any prefixes
-		$encryptMap = $server->getConfig()->getSystemValue('dbencrypt');
+		$encryptMap = $server->getConfig()->getSystemValue('dbencrypt') ?: array();
 		$dbtableprefix = $server->getConfig()->getSystemValue('dbtableprefix');
 		$encryptMapFlat = array();
 
