@@ -852,3 +852,50 @@ if ($query == 70) {
 	$orderBy = array ('`gid` ASC');
 }
 
+if ($query == 71) {
+	$sql = "SELECT COUNT(DISTINCT `cp`.`cardid`) FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+	$from = array (array ('table' => '`*PREFIX*cards_properties`','alias' => '`cp`'));
+	$distinct = false;
+	$select = array ('COUNT(DISTINCT `cp`.`cardid`)');
+	$join = array ();
+	$where = new \Doctrine\DBAL\Query\Expression\CompositeExpression('AND',array (new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`addressbookid` = :dcValue1'))),new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`name` = :dcValue2','`cp`.`name` = :dcValue3')))));
+	$groupBy = array ();
+	$having = NULL;
+	$orderBy = array ();
+}
+
+if ($query == 72) {
+	$sql = "SELECT COUNT(*) FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+	$from = array (array ('table' => '`*PREFIX*cards_properties`','alias' => '`cp`'));
+	$distinct = false;
+	$select = array ('COUNT(*)');
+	$join = array ();
+	$where = new \Doctrine\DBAL\Query\Expression\CompositeExpression('AND',array (new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`addressbookid` = :dcValue1'))),new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`name` = :dcValue2','`cp`.`name` = :dcValue3')))));
+	$groupBy = array ();
+	$having = NULL;
+	$orderBy = array ();
+}
+
+if ($query == 73) {
+	$sql = "SELECT COUNT(*) AS `num_cards` FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+	$from = array (array ('table' => '`*PREFIX*cards_properties`','alias' => '`cp`'));
+	$distinct = false;
+	$select = array ('COUNT(*) AS `num_cards`');
+	$join = array ();
+	$where = new \Doctrine\DBAL\Query\Expression\CompositeExpression('AND',array (new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`addressbookid` = :dcValue1'))),new \OC\DB\QueryBuilder\CompositeExpression(new \Doctrine\DBAL\Query\Expression\CompositeExpression('OR',array ('`cp`.`name` = :dcValue2','`cp`.`name` = :dcValue3')))));
+	$groupBy = array ();
+	$having = NULL;
+	$orderBy = array ();
+}
+
+if ($query == 74) {
+	$sql = "SELECT * FROM `*PREFIX*cards_properties`";
+	$from = array (array ('table' => '`*PREFIX*cards_properties`','alias' => NULL));
+	$distinct = false;
+	$select = array ('*');
+	$join = array ();
+	$where = NULL;
+	$groupBy = array ();
+	$having = NULL;
+	$orderBy = array ();
+}

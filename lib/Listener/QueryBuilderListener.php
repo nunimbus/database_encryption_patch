@@ -105,7 +105,7 @@ class QueryBuilderListener {
 		$sqlOrig = $this->query->getSQL();
 
 		// This is a simple (and sloppy) class that helps dump queries to disk so they can be replayed
-		// $testQueryHelper = new TestQueryHelper($this->query);
+		 //$testQueryHelper = new TestQueryHelper($this->query);
 
 		// Inside the TestQueryHelper class are statements which are useful for setting brreakpoints to target specific query types
 		// $testQueryHelper->debugBreakpoints();
@@ -114,7 +114,28 @@ class QueryBuilderListener {
 		// $testQueryHelper->dump();
 
 		// Queries can be replayed by specifying the query type and which query it is inside __DIR__ . '/test/<query-type.php>'
-		// $testQueryHelper->get('insert', 1);
+		//$testQueryHelper->get('select', 60);
+		
+		// "SELECT `id`, `uri`, `lastmodified`, `etag`, `size`, `carddata`, `uid` FROM `*PREFIX*cards` WHERE `addressbookid` = :dcValue1";
+		//$testQueryHelper->get('select', 17);
+
+		// "SELECT `id`, `uri`, `lastmodified`, `etag`, `size`, `carddata`, `uid` FROM `*PREFIX*cards` WHERE (`addressbookid` = :dcValue1) AND (`uri` = :dcValue2) LIMIT 1";
+		//$testQueryHelper->get('select', 18);
+
+		// "SELECT DISTINCT `cp`.`cardid` FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+		//$testQueryHelper->get('select', 33);
+
+		// "SELECT COUNT(DISTINCT `cp`.`cardid`) FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+		//$testQueryHelper->get('select', 71);
+
+		// "SELECT COUNT(*) FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+		//$testQueryHelper->get('select', 72);
+
+		// "SELECT COUNT(*) AS `num_cards` FROM `*PREFIX*cards_properties` `cp` WHERE (`cp`.`addressbookid` = :dcValue1) AND ((`cp`.`name` = :dcValue2) OR (`cp`.`name` = :dcValue3)) LIMIT 25";
+		//$testQueryHelper->get('select', 73);
+
+		// "SELECT * FROM `*PREFIX*cards_properties`";
+		//$testQueryHelper->get('select', 74);
 
 		$this->processQuery();
 
@@ -314,6 +335,7 @@ class QueryBuilderListener {
 		}
 	}
 
+	// Handles DISTINCT, COUNT, UNIQUE, etc as well as splitting `table.column` syntax 
 	private function safeColumn($column) {
 		$result = [
 			'prefix' => array(),
@@ -324,17 +346,17 @@ class QueryBuilderListener {
 
 		$column = str_replace('(', '|||(|||', $column);
 		$column = str_replace(')', '|||)|||', $column);
+		$column = str_replace(" ", '|||', $column);
 		$column = trim($column, '|||');
 		$selectParts = explode('|||', $column);
 		$columnEl = NULL;
 
 		if (sizeof($selectParts) > 1) {
-			$selectParts = array_reverse($selectParts);
 			foreach ($selectParts as $key=>$selectPart) {
-				if ($selectParts[$key + 1] == '(') {
+				if (is_null($columnEl) && (sizeof($selectParts) <= $key + 1 || $selectParts[$key + 1] == ')')) {
 					$columnEl = $selectParts[$key];
 				}
-				else if (is_null($columnEl)) {
+				else if (! is_null($columnEl)) {
 					array_push($result['suffix'], $selectParts[$key]);
 				}
 				else {
@@ -346,17 +368,16 @@ class QueryBuilderListener {
 			$columnEl = $selectParts[0];
 		}
 
-		$selectParts = explode(" ", $columnEl, 2);
-		@list($col, $tab) = array_reverse(explode('.', $selectParts[0]));
-		$result['column'] = $col;
-		$result['table'] = $tab;
+		$result['column'] = $columnEl;
+		$selectParts = explode('.', $columnEl);
 
 		if (sizeof($selectParts) > 1) {
-			array_push($result['suffix'], " $selectParts[1]");
+			$result['column'] = $selectParts[0];
+			$result['table'] = $selectParts[1];
 		}
 
-		$result['prefix'] = implode(array_reverse($result['prefix']));
-		$result['suffix'] = implode($result['suffix']);
+		$result['prefix'] = implode($result['prefix']) . " " == " " ? "" : implode($result['prefix']) . " ";
+		$result['suffix'] = implode(" ", $result['suffix']) == " " ? "" : implode(" ", $result['suffix']);
 		$result['table'] = ($result['table'] == "") ? (NULL) : ($result['table']);
 
 		return $result;
