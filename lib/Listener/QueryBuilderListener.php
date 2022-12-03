@@ -372,8 +372,8 @@ class QueryBuilderListener {
 		$selectParts = explode('.', $columnEl);
 
 		if (sizeof($selectParts) > 1) {
-			$result['column'] = $selectParts[0];
-			$result['table'] = $selectParts[1];
+			$result['column'] = $selectParts[1];
+			$result['table'] = $selectParts[0];
 		}
 
 		$result['prefix'] = implode($result['prefix']) . " " == " " ? "" : implode($result['prefix']) . " ";
