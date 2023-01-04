@@ -55,11 +55,6 @@ class Application extends App implements IBootstrap {
 				$password = $secret;
 		}
 
-		// Hash the password so it isn't accidentally written to a log
-		$hasher = $server->getHasher();
-		$password = $hasher->hash($password);
-		$password = base64_encode($password);
-		$password = substr($password, 0, 44);
 		$this->password = $password;
 	}
 
