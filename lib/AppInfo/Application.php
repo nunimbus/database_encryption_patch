@@ -63,17 +63,23 @@ class Application extends App implements IBootstrap {
 			$server->getUserSession()->isLoggedIn() &&
 			$server->getUserSession()->getUser()->getBackend() instanceof IProvideUserSecretBackend
 		) {
-			try {
+			$userId = $server->getUserSession()->getUser()->getUID();
+			$pass = $server->getUserSession()->getUser()->getBackend()->getCurrentUserSecret();
+
+			if (OC::$server->getUserManager()->checkPasswordNoLogging($userId, $pass)) {
+				$password = $pass;
+			}
+			else if ($token = OC::$server->getRequest()->server['PHP_AUTH_PW']) {
 				$provider = OC::$server->get('OC\Authentication\Token\IProvider');
-				$token = OC::$server->getRequest()->server['PHP_AUTH_PW'];
 				$dbToken = $provider->getToken($token);
 				$pass = $provider->getPassword($dbToken, $token);
 	
 				if (OC::$server->getUserManager()->checkPasswordNoLogging($userId, $pass)) {
 					$password = $pass;
 				}
-			} catch (\Exception $e) {
-				throw new PasswordUnavailableException();
+				else {
+					throw new PasswordUnavailableException();
+				}
 			}
 		}
 
