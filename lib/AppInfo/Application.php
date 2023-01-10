@@ -29,6 +29,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Authentication\IProvideUserSecretBackend;
 use OC_App;
 use OC;
 
@@ -42,20 +43,6 @@ class Application extends App implements IBootstrap {
 
 		// Need to load the helper app and its classes
 		OC_App::loadApp('patch_assets');
-
-		// Get the user or system secret for the encryption calls
-		$server = OC::$server;
-		$password = $server->getConfig()->getSystemValue('secret');
-
-		if (
-			$server->getUserSession()->isLoggedIn() &&
-			$server->getUserSession()->getUser()->getBackendClassName() == "user_saml" &&
-			$secret = $server->query('OCA\User_SAML\UserBackend')->getCurrentUserSecret()
-		) {
-				$password = $secret;
-		}
-
-		$this->password = $password;
 	}
 
 	public function getPassword() {
@@ -68,6 +55,29 @@ class Application extends App implements IBootstrap {
 
 	public function boot(IBootContext $context): void {
 		$server = $context->getServerContainer();
+
+		// Get the user or system secret for the encryption calls
+		$password = $server->getConfig()->getSystemValue('secret');
+
+		if (
+			$server->getUserSession()->isLoggedIn() &&
+			$server->getUserSession()->getUser()->getBackend() instanceof IProvideUserSecretBackend
+		) {
+			try {
+				$provider = OC::$server->get('OC\Authentication\Token\IProvider');
+				$token = OC::$server->getRequest()->server['PHP_AUTH_PW'];
+				$dbToken = $provider->getToken($token);
+				$pass = $provider->getPassword($dbToken, $token);
+	
+				if (OC::$server->getUserManager()->checkPasswordNoLogging($userId, $pass)) {
+					$password = $pass;
+				}
+			} catch (\Exception $e) {
+				throw new PasswordUnavailableException();
+			}
+		}
+
+		$this->password = $password;
 
 		if (
 			$server->getRequest()->getRequestUri() == '/index.php/settings/apps/disable' &&
