@@ -29,6 +29,7 @@ use OCA\DatabaseEncryptionPatch\Test\TestQueryHelper;
 use OC\DB\QueryBuilder\CompositeExpression as OCCompositeExpression;
 use Doctrine\DBAL\Query\Expression\CompositeExpression as DBALCompositeExpression;
 use Doctrine\DBAL\Query\QueryBuilder;
+use Doctrine\DBAL\Driver\PDO\PDOException;
 use OC;
 
 use \PHPSQLParser\processors\DefaultProcessor;
@@ -98,11 +99,12 @@ class QueryBuilderListener {
 
 	public static function eventHandler($params) {
 		$handler = new \OCA\DatabaseEncryptionPatch\Listener\QueryBuilderListener($params);
-		$handler->handle();
+		$params['result'] = $handler->handle();
 	}
 
 	public function handle() {
 		$sqlOrig = $this->query->getSQL();
+		$queryOrig = clone $this->query;
 
 		// This is a simple (and sloppy) class that helps dump queries to disk so they can be replayed
 		 //$testQueryHelper = new TestQueryHelper($this->query);
@@ -141,6 +143,15 @@ class QueryBuilderListener {
 
 		if ($sqlOrig != $this->query->getSQL()) {
 			$this->query->getSQL();
+
+			try {
+				return $this->query->execute();
+			} catch (\Doctrine\DBAL\Exception\DriverException $e) {
+				$this->password = OC::$server->getConfig()->getSystemValue('secret');
+				$this->query = $queryOrig;
+				$this->processQuery();
+				return $this->query->execute();
+			}	
 		}
 
 		return;
@@ -620,7 +631,6 @@ class QueryBuilderListener {
 							break;
 						}
 					}
-					$i = 1;
 				}
 				$expression .= $part['base_expr'] . " ";
 			}
@@ -651,7 +661,6 @@ class QueryBuilderListener {
 						$exprParts[$key] = '(';
 					}
 					else {
-						$i = 1;
 					}
 				}
 			}

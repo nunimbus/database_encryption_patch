@@ -69,7 +69,8 @@ class Application extends App implements IBootstrap {
 			if (OC::$server->getUserManager()->checkPasswordNoLogging($userId, $pass)) {
 				$password = $pass;
 			}
-			else if ($token = OC::$server->getRequest()->server['PHP_AUTH_PW']) {
+			else if (isset(OC::$server->getRequest()->server['PHP_AUTH_PW']) || array_key_exists('PHP_AUTH_PW', OC::$server->getRequest()->server)) {
+				$token = OC::$server->getRequest()->server['PHP_AUTH_PW'];
 				$provider = OC::$server->get('OC\Authentication\Token\IProvider');
 				$dbToken = $provider->getToken($token);
 				$pass = $provider->getPassword($dbToken, $token);
