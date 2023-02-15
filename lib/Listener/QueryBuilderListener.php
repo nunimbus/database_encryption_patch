@@ -29,7 +29,8 @@ use OCA\DatabaseEncryptionPatch\Test\TestQueryHelper;
 use OC\DB\QueryBuilder\CompositeExpression as OCCompositeExpression;
 use Doctrine\DBAL\Query\Expression\CompositeExpression as DBALCompositeExpression;
 use Doctrine\DBAL\Query\QueryBuilder;
-use Doctrine\DBAL\Driver\PDO\PDOException;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
 use OC;
 
 use \PHPSQLParser\processors\DefaultProcessor;
@@ -40,7 +41,7 @@ use \PHPSQLParser\processors\SQLChunkProcessor;
 //use \PhpMyAdmin\SqlParser\Components\Condition;
 //use \PhpMyAdmin\SqlParser\Lexer;
 
-class QueryBuilderListener {
+class QueryBuilderListener implements IEventListener {	
 	private $password = null;
 	private $cryptOpts = "";
 	private $encryptFunc;
@@ -50,8 +51,8 @@ class QueryBuilderListener {
 	private $encryptMap = array();
 	private $matchingParts = array();
 
-	public function __construct($params) {
-		$this->query = $params['queryBuilder'];
+	public function init($queryBuilder) {
+		$this->query = $queryBuilder;
 		$server = OC::$server;
 		$parent = $server->get('OCA\DatabaseEncryptionPatch\AppInfo\Application');
 		$this->password = $parent->getPassword();
@@ -97,12 +98,8 @@ class QueryBuilderListener {
 		}
 	}
 
-	public static function eventHandler($params) {
-		$handler = new \OCA\DatabaseEncryptionPatch\Listener\QueryBuilderListener($params);
-		$params['result'] = $handler->handle();
-	}
-
-	public function handle() {
+	public function handle(Event $event): void {
+		$this->init($event->getQueryBuilder());
 		$sqlOrig = $this->query->getSQL();
 		$queryOrig = clone $this->query;
 
@@ -145,12 +142,13 @@ class QueryBuilderListener {
 			$this->query->getSQL();
 
 			try {
-				return $this->query->execute();
+				$event->setResult($this->query->execute());
 			} catch (\Doctrine\DBAL\Exception\DriverException $e) {
+				// Fallback to using the system secret in the case of there being no IProvideUserSecretBackend
 				$this->password = OC::$server->getConfig()->getSystemValue('secret');
 				$this->query = $queryOrig;
 				$this->processQuery();
-				return $this->query->execute();
+				$event->setResult($this->query->execute());
 			}	
 		}
 

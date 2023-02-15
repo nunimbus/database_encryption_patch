@@ -32,6 +32,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Authentication\IProvideUserSecretBackend;
 use OC_App;
 use OC;
+use OC\DB\QueryBuilder\Events\BeforeQueryExecuted;
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'database_encryption_patch';
@@ -40,9 +41,6 @@ class Application extends App implements IBootstrap {
 
 	public function __construct(array $urlParams = []) {
 		parent::__construct(self::APP_ID, $urlParams);
-
-		// Need to load the helper app and its classes
-		OC_App::loadApp('patch_assets');
 	}
 
 	public function getPassword() {
@@ -50,7 +48,7 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
-		\OCP\Util::connectHook('QueryBuilder', 'preExecuteSql', '\OCA\DatabaseEncryptionPatch\Listener\QueryBuilderListener', 'eventHandler');
+		$context->registerEventListener(BeforeQueryExecuted::class, QueryBuilderListener::class);
 	}
 
 	public function boot(IBootContext $context): void {

@@ -1,0 +1,35 @@
+38a39,40
+> use OC\DB\QueryBuilder\Events\BeforeQueryExecuted;
+> use OC\DB\QueryBuilder\Events\AfterQueryExecuted;
+55a58
+> use OCP\EventDispatcher\IEventDispatcher;
+59d61
+< 
+79a82,84
+> 	/** @var IEventDispatcher */
+> 	private $dispatcher;
+> 
+91a97
+> 		$this->dispatcher = \OC::$server->get(IEventDispatcher::class);
+281c287,298
+< 		$result = $this->queryBuilder->execute();
+---
+> 		$event = new BeforeQueryExecuted($this);
+> 		$this->dispatcher->dispatchTyped($event);
+> 		$result = $event->getResult();
+> 
+> 		if ($result === null) {
+> 			$result = $this->queryBuilder->execute();
+> 		}
+> 
+> 		$event = new AfterQueryExecuted($this, $result);
+> 		$this->dispatcher->dispatchTyped($event);
+> 		$result = $event->getResult();
+> 		
+867a885,890
+> 		if ($this->getQueryPart('where') !== null && $this->systemConfig->getValue('debug', false)) {
+> 			// Only logging a warning, not throwing for now.
+> 			$e = new QueryException('Using where() on non-empty WHERE part, please verify it is intentional to not call whereAnd() or whereOr() instead. Otherwise consider creating a new query builder object or call resetQueryPart(\'where\') first.');
+> 			$this->logger->warning($e->getMessage(), ['exception' => $e]);
+> 		}
+> 
