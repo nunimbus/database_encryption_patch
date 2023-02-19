@@ -41,6 +41,9 @@ class Application extends App implements IBootstrap {
 
 	public function __construct(array $urlParams = []) {
 		parent::__construct(self::APP_ID, $urlParams);
+
+		// Need to load the helper app and its classes
+		OC_App::loadApp('patch_assets');
 	}
 
 	public function getPassword() {
