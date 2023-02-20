@@ -1,35 +1,107 @@
-38a39,40
-> use OC\DB\QueryBuilder\Events\BeforeQueryExecuted;
-> use OC\DB\QueryBuilder\Events\AfterQueryExecuted;
-55a58
-> use OCP\EventDispatcher\IEventDispatcher;
-59d61
-< 
-79a82,84
-> 	/** @var IEventDispatcher */
-> 	private $dispatcher;
-> 
-91a97
-> 		$this->dispatcher = \OC::$server->get(IEventDispatcher::class);
-281c287,298
-< 		$result = $this->queryBuilder->execute();
----
-> 		$event = new BeforeQueryExecuted($this);
-> 		$this->dispatcher->dispatchTyped($event);
-> 		$result = $event->getResult();
-> 
-> 		if ($result === null) {
-> 			$result = $this->queryBuilder->execute();
-> 		}
-> 
-> 		$event = new AfterQueryExecuted($this, $result);
-> 		$this->dispatcher->dispatchTyped($event);
-> 		$result = $event->getResult();
-> 		
-867a885,890
-> 		if ($this->getQueryPart('where') !== null && $this->systemConfig->getValue('debug', false)) {
-> 			// Only logging a warning, not throwing for now.
-> 			$e = new QueryException('Using where() on non-empty WHERE part, please verify it is intentional to not call whereAnd() or whereOr() instead. Otherwise consider creating a new query builder object or call resetQueryPart(\'where\') first.');
-> 			$this->logger->warning($e->getMessage(), ['exception' => $e]);
-> 		}
-> 
+--- /var/www/html/lib/private/DB/QueryBuilder/QueryBuilder.php	2023-01-17 09:05:41.000000000 +0000
++++ /var/www/html/apps/database_encryption_patch/lib/Migration/lib/private/DB/QueryBuilder/QueryBuilder.php/25.0.3/QueryBuilder.php	2023-02-19 22:04:34.000000000 +0000
+@@ -34,10 +34,12 @@
+ use Doctrine\DBAL\Platforms\OraclePlatform;
+ use Doctrine\DBAL\Platforms\PostgreSQL94Platform;
+ use Doctrine\DBAL\Platforms\SqlitePlatform;
+ use Doctrine\DBAL\Query\QueryException;
+ use OC\DB\ConnectionAdapter;
++use OC\DB\QueryBuilder\Events\BeforeQueryExecuted;
++use OC\DB\QueryBuilder\Events\AfterQueryExecuted;
+ use OC\DB\QueryBuilder\ExpressionBuilder\ExpressionBuilder;
+ use OC\DB\QueryBuilder\ExpressionBuilder\MySqlExpressionBuilder;
+ use OC\DB\QueryBuilder\ExpressionBuilder\OCIExpressionBuilder;
+ use OC\DB\QueryBuilder\ExpressionBuilder\PgSqlExpressionBuilder;
+ use OC\DB\QueryBuilder\ExpressionBuilder\SqliteExpressionBuilder;
+@@ -51,14 +53,14 @@
+ use OCP\DB\QueryBuilder\ICompositeExpression;
+ use OCP\DB\QueryBuilder\ILiteral;
+ use OCP\DB\QueryBuilder\IParameter;
+ use OCP\DB\QueryBuilder\IQueryBuilder;
+ use OCP\DB\QueryBuilder\IQueryFunction;
++use OCP\EventDispatcher\IEventDispatcher;
+ use Psr\Log\LoggerInterface;
+ 
+ class QueryBuilder implements IQueryBuilder {
+-
+ 	/** @var ConnectionAdapter */
+ 	private $connection;
+ 
+ 	/** @var SystemConfig */
+ 	private $systemConfig;
+@@ -75,10 +77,13 @@
+ 	private $automaticTablePrefix = true;
+ 
+ 	/** @var string */
+ 	protected $lastInsertedTable;
+ 
++	/** @var IEventDispatcher */
++	private $dispatcher;
++
+ 	/**
+ 	 * Initializes a new QueryBuilder.
+ 	 *
+ 	 * @param ConnectionAdapter $connection
+ 	 * @param SystemConfig $systemConfig
+@@ -87,10 +92,11 @@
+ 		$this->connection = $connection;
+ 		$this->systemConfig = $systemConfig;
+ 		$this->logger = $logger;
+ 		$this->queryBuilder = new \Doctrine\DBAL\Query\QueryBuilder($this->connection->getInner());
+ 		$this->helper = new QuoteHelper();
++		$this->dispatcher = \OC::$server->get(IEventDispatcher::class);
+ 	}
+ 
+ 	/**
+ 	 * Enable/disable automatic prefixing of table names with the oc_ prefix
+ 	 *
+@@ -276,11 +282,22 @@
+ 				'app' => 'core',
+ 				'exception' => $exception,
+ 			]);
+ 		}
+ 
+-		$result = $this->queryBuilder->execute();
++		$event = new BeforeQueryExecuted($this);
++		$this->dispatcher->dispatchTyped($event);
++		$result = $event->getResult();
++
++		if ($result === null) {
++			$result = $this->queryBuilder->execute();
++		}
++
++		$event = new AfterQueryExecuted($this, $result);
++		$this->dispatcher->dispatchTyped($event);
++		$result = $event->getResult();
++		
+ 		if (is_int($result)) {
+ 			return $result;
+ 		}
+ 		return new ResultAdapter($result);
+ 	}
+@@ -863,10 +880,16 @@
+ 	 * @param mixed ...$predicates The restriction predicates.
+ 	 *
+ 	 * @return $this This QueryBuilder instance.
+ 	 */
+ 	public function where(...$predicates) {
++		if ($this->getQueryPart('where') !== null && $this->systemConfig->getValue('debug', false)) {
++			// Only logging a warning, not throwing for now.
++			$e = new QueryException('Using where() on non-empty WHERE part, please verify it is intentional to not call whereAnd() or whereOr() instead. Otherwise consider creating a new query builder object or call resetQueryPart(\'where\') first.');
++			$this->logger->warning($e->getMessage(), ['exception' => $e]);
++		}
++
+ 		call_user_func_array(
+ 			[$this->queryBuilder, 'where'],
+ 			$predicates
+ 		);
+ 
+@@ -1349,6 +1372,6 @@
+ 			return $alias;
+ 		}
+ 
+ 		return $this->helper->quoteColumnName($alias);
+ 	}
+-}
++}
+\ No newline at end of file
